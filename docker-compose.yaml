@@ -1,0 +1,66 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/usr/repos/vector-dbs-crud
+    depends_on:
+      - chromadb
+      - postgres
+
+  # ChromaDB Service
+  chromadb:
+    image: chromadb/chroma:latest
+    volumes:
+      - ./chroma-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE  # let’s Chroma know to persist data
+      - PERSIST_DIRECTORY=/chroma/chroma # this is the default path, change it as needed
+      - ANONYMIZED_TELEMETRY=${ANONYMIZED_TELEMETRY:-TRUE}
+    ports:
+      - 8000:8000
+    healthcheck:
+      test: [ "CMD", "/bin/bash", "-c", "cat < /dev/null > /dev/tcp/localhost/8001" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Postgres for Vector Admin
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pgvector_dbs
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./sql/init_pgvector.sql:/docker-entrypoint-initdb.d/init_pgvector.sql
+      - ./pgvector-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "myuser", "-d", "mydb" ]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+# # Vector Admin Service
+#   vectoradmin:
+#     image: mintplexlabs/vectoradmin:latest
+#     ports:
+#       - "3001:3001"  # Expose Vector Admin
+#     environment:
+#       SERVER_PORT: "3001"
+#       JWT_SECRET: "your-random-jwt-secret"
+#       INNGEST_EVENT_KEY: "background_workers"
+#       INNGEST_SIGNING_KEY: "random-string-goes-here"
+#       INNGEST_LANDING_PAGE: "true"
+#       DATABASE_CONNECTION_STRING: "postgresql://myuser:mypassword@postgres:5432/vdbms"  # New database for Vector Admin
+#     depends_on:
+#       - postgres  # Ensure Postgres starts before Vector Admin
+
+volumes:
+  chroma-data:
+  pgvector-data:

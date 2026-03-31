@@ -1,0 +1,47 @@
+[project]
+name = "vector-dbs-crud"
+version = "0.1.0"
+description = "Vector Databases CRUD Examples with ChromaDB and pgVector"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chromadb",
+    "psycopg2-binary",
+    "transformers",
+    "torch",
+    "torchvision"
+]
+
+[dependency-groups]
+dev = [
+    "mypy",
+    # "pre-commit",
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 132
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
