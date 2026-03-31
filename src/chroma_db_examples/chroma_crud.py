@@ -4,7 +4,7 @@ from chromadb import HttpClient, QueryResult
 from chromadb.api.models.Collection import Collection
 
 # Create a Chroma client
-chroma_host = "chromadb"
+chroma_host = "localhost"
 chroma_port = 8000
 client = HttpClient(host=chroma_host, port=chroma_port)
 
