@@ -3,7 +3,7 @@
 ## install packages, install pre-commit
 install-dev:
 	uv sync --all-extras
-	uv run pre-commit install
+# 	uv run pre-commit install
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +

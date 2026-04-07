@@ -1,13 +1,13 @@
 services:
-  devcontainer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ./:/usr/repos/vector-dbs-crud
-    depends_on:
-      - chromadb
-      - postgres
+  # devcontainer:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ./:/usr/repos/vector-dbs-crud
+  #   depends_on:
+  #     - chromadb
+  #     - postgres
 
   # ChromaDB Service
   chromadb:

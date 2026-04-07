@@ -1,5 +1,8 @@
 import psycopg2
-from pg_embedding_util import generate_embeddings
+from pgvector.psycopg2 import register_vector
+
+# from pg_embedding_util import generate_embeddings
+from sentence_transformers import SentenceTransformer
 
 
 class PgVectorCRUD:
@@ -39,13 +42,15 @@ class PgVectorCRUD:
             port=self.port,
             database=self.database,
         )
+        # Register the vector type with psycopg2
+        register_vector(conn)
         cur = conn.cursor()
         return conn, cur
 
     # ================================
     # CREATE Operation
     # ================================
-    def create_items(self, sentences: list[str]) -> None:
+    def create_items(self, model: SentenceTransformer, sentences: list[str]) -> None:
         """
         Insert new sentences with their embeddings into the items table.
 
@@ -55,7 +60,7 @@ class PgVectorCRUD:
         conn, cur = self.connect_db()
         try:
             for sentence in sentences:
-                embedding = generate_embeddings(sentence)
+                embedding = model.encode(sentence)
                 cur.execute("INSERT INTO items (content, embedding) VALUES (%s, %s)", (sentence, embedding))
 
             # Commit the transaction to save the changes
@@ -70,7 +75,7 @@ class PgVectorCRUD:
     # ================================
     # READ Operation (Search)
     # ================================
-    def read_similar_items(self, query: str, limit: int) -> None:
+    def read_similar_items(self, model: SentenceTransformer, query: str, limit: int) -> None:
         """
         Perform a cosine similarity search for the query and return similar items.
 
@@ -80,7 +85,7 @@ class PgVectorCRUD:
         """
         conn, cur = self.connect_db()
         try:
-            query_embedding = generate_embeddings(query)
+            query_embedding = model.encode(query)
 
             # Perform a cosine similarity search
             cur.execute(
@@ -104,7 +109,7 @@ class PgVectorCRUD:
     # ================================
     # UPDATE Operation
     # ================================
-    def update_item(self, item_id: int, new_content: str) -> None:
+    def update_item(self, model: SentenceTransformer, item_id: int, new_content: str) -> None:
         """
         Update the content and embedding of an item in the database by its ID.
 
@@ -114,7 +119,7 @@ class PgVectorCRUD:
         """
         conn, cur = self.connect_db()
         try:
-            new_embedding = generate_embeddings(new_content)
+            new_embedding = model.encode(new_content)
 
             # Update the item's content and embedding in the table
             cur.execute(
@@ -154,10 +159,51 @@ class PgVectorCRUD:
             cur.close()
             conn.close()
 
+    # ================================
+    # Index Creation
+    # ================================
+    def create_index(self, index_type: str = "hnsw", distance_op: str = "cosine_distance") -> None:
+        """
+        Create an index on the embedding column.
+        
+        Args:
+            index_type: Either "hnsw" or "ivfflat"
+            distance_op: Either "cosine", "l2", or "ip" (inner product)
+        """
+        conn, cur = self.connect_db()
+        try:
+            ops_map = {
+                "cosine_distance": "vector_cosine_ops",
+                "l2": "vector_l2_ops",
+                "inner_product": "vector_ip_ops"
+            }
+
+            ops = ops_map.get(distance_op, "vector_cosine_ops")
+
+            if index_type == "hnsw":
+                cur.execute(f"CREATE INDEX IF NOT EXISTS items_embedding_idx ON items USING hnsw (embedding {ops})")
+            elif index_type == "ivfflat":
+                cur.execute(
+                    f"""
+                        CREATE INDEX IF NOT EXISTS items_embedding_idx ON items USING ivfflat (embedding {ops}) WITH (lists = 100)
+                    """
+                )
+
+            conn.commit()
+            print(f"{index_type.upper()} index created successfully")
+        except Exception as e:
+            print("Error creating index:", str(e))
+        finally:
+            cur.close()
+            conn.close()
+
+
 
 # This check ensures that the functions are only run when the script is executed directly, not when it's imported as a module.
 if __name__ == "__main__":
     pg_crud = PgVectorCRUD(user="myuser", password="mypassword", host="localhost", port=5433, database="mydb")
+
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     sentences = [
         "A group of vibrant parrots chatter loudly, sharing stories of their tropical adventures.",
@@ -173,8 +219,9 @@ if __name__ == "__main__":
     ]
 
     # Example of CRUD operations
-    # pg_crud.create_items(sentences)
-    pg_crud.read_similar_items(query="Give me some content about the ocean", limit=5)
-    # pg_crud.update_item(item_id=1, new_content="Updated content about tropical birds.")
+    # pg_crud.create_items(model=model, sentences=sentences)
+    pg_crud.create_index(index_type="hnsw", distance_op="l2")
+    pg_crud.read_similar_items(model=model, query="Give me some content about the ocean", limit=5)
+    # pg_crud.update_item(model=model, item_id=1, new_content="Updated content about tropical birds.")
     # pg_crud.update_item(item_id=2, new_content="Updated content about Mathematician.")
     # pg_crud.delete_item(item_id=3)

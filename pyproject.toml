@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "chromadb",
+    "pgvector",
     "psycopg2-binary",
-    "transformers",
-    "torch",
-    "torchvision"
+    "sentence_transformers"
+    # "transformers",
+    # "torch",
+    # "torchvision"
 ]
 
 [dependency-groups]

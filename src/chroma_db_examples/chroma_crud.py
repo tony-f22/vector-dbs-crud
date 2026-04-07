@@ -2,6 +2,7 @@ from typing import Literal
 
 from chromadb import HttpClient, QueryResult
 from chromadb.api.models.Collection import Collection
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 # Create a Chroma client
 chroma_host = "localhost"
@@ -13,7 +14,7 @@ client = HttpClient(host=chroma_host, port=chroma_port)
 # ================================
 
 
-def create_collection(collection_name: str, documents: list[str]) -> Collection:
+def create_collection(collection_name: str, documents: list[str], ef: SentenceTransformerEmbeddingFunction) -> Collection:
     """
     Create a new collection in Chroma or retrieve an existing one.
 
@@ -128,9 +129,13 @@ documents = [
     "In the quantum realm, particles flicker in and out of existence, dancing to the tunes of probability.",
 ]
 
+sentence_transformer_ef = SentenceTransformerEmbeddingFunction(
+    model_name="all-MiniLM-L6-v2",
+)
+
 # 1. CREATE: Add documents to a new collection
-collection_name = "test_5"
-collection = create_collection(collection_name, documents)
+collection_name = "test_collection_1"
+collection = create_collection(collection_name=collection_name, documents=documents, ef=sentence_transformer_ef)
 
 # # Get the list of collections
 # collections = client.list_collections()
