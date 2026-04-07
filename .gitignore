@@ -208,3 +208,5 @@ __marimo__/
 
 chroma-data/
 pgvector-data/
+dataset_fallback/
+presentation/
