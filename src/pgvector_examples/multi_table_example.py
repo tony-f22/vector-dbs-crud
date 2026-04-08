@@ -68,7 +68,7 @@ class PgVectorMultiTable:
                 CREATE INDEX product_desc_category_idx ON product_descriptions(category);
             """)
 
-            # Table 2: Product Images (512 dimensions - simulating CLIP)
+            # Table 2: Product Images
             cur.execute("""
                 DROP TABLE IF EXISTS product_images CASCADE;
                 
@@ -254,7 +254,7 @@ class PgVectorMultiTable:
                        WHERE category = %s
                        ORDER BY similarity DESC 
                        LIMIT %s""",
-                    (query_embedding.tolist(), category, limit),
+                    (query_embedding, category, limit),
                 )
             else:
                 cur.execute(
@@ -263,7 +263,7 @@ class PgVectorMultiTable:
                        FROM product_descriptions
                        ORDER BY similarity DESC 
                        LIMIT %s""",
-                    (query_embedding.tolist(), limit),
+                    (query_embedding, limit),
                 )
 
             print(f"\nProduct Search: '{query}'")
@@ -299,7 +299,7 @@ class PgVectorMultiTable:
                    FROM user_profiles
                    ORDER BY similarity DESC 
                    LIMIT %s""",
-                (query_embedding.tolist(), limit),
+                (query_embedding, limit),
             )
 
             print(f"\nUser Profile Search: '{query}'")

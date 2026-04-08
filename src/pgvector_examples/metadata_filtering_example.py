@@ -223,7 +223,7 @@ if __name__ == "__main__":
     # Create table with metadata support
     pg_metadata.create_table_with_metadata()
 
-    # Sample documents with metadata (matching presentation slide 212)
+    # Sample documents with metadata
     documents = [
         {
             "content": "Vector databases are specialized systems for storing and querying high-dimensional vectors efficiently.",
