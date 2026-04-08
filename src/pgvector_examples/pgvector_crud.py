@@ -47,10 +47,31 @@ class PgVectorCRUD:
         cur = conn.cursor()
         return conn, cur
 
+    def create_table(self) -> None:
+        """Create a table with vector embeddings"""
+        conn, cur = self.connect_db()
+        try:
+            cur.execute("""
+                DROP TABLE IF EXISTS items;
+                
+                CREATE TABLE items (
+                    id bigserial PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    embedding vector(384)
+                );
+            """)
+            conn.commit()
+            print("Table 'items' created")
+        except Exception as e:
+            print("Error creating table:", str(e))
+        finally:
+            cur.close()
+            conn.close()
+
     # ================================
-    # CREATE Operation
+    # INSERT Operation
     # ================================
-    def create_items(self, model: SentenceTransformer, sentences: list[str]) -> None:
+    def insert_items(self, model: SentenceTransformer, sentences: list[str]) -> None:
         """
         Insert new sentences with their embeddings into the items table.
 
@@ -203,6 +224,7 @@ class PgVectorCRUD:
 if __name__ == "__main__":
     pg_crud = PgVectorCRUD(user="myuser", password="mypassword", host="localhost", port=5433, database="mydb")
 
+    # Load the embedding model
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     sentences = [
@@ -218,10 +240,14 @@ if __name__ == "__main__":
         "In the quantum realm, particles flicker in and out of existence, dancing to the tunes of probability.",
     ]
 
+    # Create table with metadata support
+    pg_crud.create_table()
+
     # Example of CRUD operations
-    # pg_crud.create_items(model=model, sentences=sentences)
-    pg_crud.create_index(index_type="hnsw", distance_op="l2")
-    pg_crud.read_similar_items(model=model, query="Give me some content about the ocean", limit=5)
+    # pg_crud.insert_items(model=model, sentences=sentences)
+    # pg_crud.create_index(index_type="hnsw", distance_op="cosine_distance")
+    
+    # Perform similarity search using cosine similarity
+    # pg_crud.read_similar_items(model=model, query="Give me some content about the ocean", limit=5)
     # pg_crud.update_item(model=model, item_id=1, new_content="Updated content about tropical birds.")
-    # pg_crud.update_item(item_id=2, new_content="Updated content about Mathematician.")
     # pg_crud.delete_item(item_id=3)
