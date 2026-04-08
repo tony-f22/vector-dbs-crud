@@ -45,7 +45,10 @@ class ChromaMultiCollection:
         except Exception:
             pass
 
-        collection = self.client.create_collection(name=collection_name)
+        collection = self.client.create_collection(
+            name=collection_name,
+            metadata={"hnsw:space": "cosine"}
+        )
 
         # Prepare data
         ids = [p["product_id"] for p in products]
@@ -97,7 +100,10 @@ class ChromaMultiCollection:
         except Exception:
             pass
 
-        collection = self.client.create_collection(name=collection_name)
+        collection = self.client.create_collection(
+            name=collection_name,
+            metadata={"hnsw:space": "cosine"}
+        )
 
         # Prepare data
         ids = [f"img_{i}" for i in range(len(images))]
@@ -152,7 +158,10 @@ class ChromaMultiCollection:
         except Exception:
             pass
 
-        collection = self.client.create_collection(name=collection_name)
+        collection = self.client.create_collection(
+            name=collection_name,
+            metadata={"hnsw:space": "cosine"}
+        )
 
         # Prepare data
         ids = [u["user_id"] for u in users]
@@ -176,13 +185,16 @@ class ChromaMultiCollection:
         return collection
 
     def search_products(
-        self, collection: Collection, query: str, category: str = None, n_results: int = 5
+        self, collection: Collection, model: SentenceTransformer, query: str, category: str = None, n_results: int = 5
     ) -> None:
         """Search product descriptions."""
         where_clause = {"category": category} if category else None
 
+        # Generate query embedding using the same model (768 dims)
+        query_embedding = model.encode(query)
+
         result = collection.query(
-            query_texts=[query],
+            query_embeddings=[query_embedding],
             n_results=n_results,
             where=where_clause,
             include=["documents", "metadatas", "distances"]
@@ -210,11 +222,19 @@ class ChromaMultiCollection:
             print(f"     Similarity: {similarity:.4f}")
 
     def search_images(
-        self, collection: Collection, query: str, n_results: int = 5
+        self, collection: Collection, model: SentenceTransformer, query: str, n_results: int = 5
     ) -> None:
         """Search product images by description."""
+
+        # Generate and pad to 512 dims (simulating CLIP)
+        emb = model.encode(query).tolist()
+        if len(emb) < 512:
+            emb.extend([0.0] * (512 - len(emb)))
+        else:
+            emb = emb[:512]
+            
         result = collection.query(
-            query_texts=[query],
+            query_embeddings=[emb],
             n_results=n_results,
             include=["documents", "metadatas", "distances"]
         )
@@ -396,6 +416,7 @@ if __name__ == "__main__":
     print("="*80)
     chroma_multi.search_products(
         collection=product_collection,
+        model=model_768,
         query="computer for AI development",
         n_results=3
     )
@@ -406,6 +427,7 @@ if __name__ == "__main__":
     print("="*80)
     chroma_multi.search_products(
         collection=product_collection,
+        model=model_768,
         query="device with good camera",
         category="Electronics",
         n_results=3
@@ -417,6 +439,7 @@ if __name__ == "__main__":
     print("="*80)
     chroma_multi.search_images(
         collection=image_collection,
+        model=model_384,
         query="laptop with colorful keyboard",
         n_results=3
     )
@@ -455,6 +478,7 @@ if __name__ == "__main__":
     print("\nStep 2: Find products for those users")
     chroma_multi.search_products(
         collection=product_collection,
+        model=model_768,
         query="gaming laptop with powerful GPU",
         n_results=2
     )
