@@ -47,7 +47,11 @@ class ChromaMultiCollection:
 
         collection = self.client.create_collection(
             name=collection_name,
-            metadata={"hnsw:space": "cosine"}
+            configuration={
+                "hnsw": {
+                    "space": "cosine"
+                }
+            }
         )
 
         # Prepare data
@@ -102,7 +106,11 @@ class ChromaMultiCollection:
 
         collection = self.client.create_collection(
             name=collection_name,
-            metadata={"hnsw:space": "cosine"}
+            configuration={
+                "hnsw": {
+                    "space": "cosine"
+                }
+            }
         )
 
         # Prepare data
@@ -160,7 +168,11 @@ class ChromaMultiCollection:
 
         collection = self.client.create_collection(
             name=collection_name,
-            metadata={"hnsw:space": "cosine"}
+            configuration={
+                "hnsw": {
+                    "space": "cosine"
+                }
+            }
         )
 
         # Prepare data
@@ -232,7 +244,7 @@ class ChromaMultiCollection:
             emb.extend([0.0] * (512 - len(emb)))
         else:
             emb = emb[:512]
-            
+
         result = collection.query(
             query_embeddings=[emb],
             n_results=n_results,

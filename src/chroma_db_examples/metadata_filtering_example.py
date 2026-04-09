@@ -36,7 +36,15 @@ class ChromaMetadataFiltering:
         except Exception:
             pass
 
-        collection = self.client.create_collection(name=collection_name, embedding_function=ef)
+        collection = self.client.create_collection(
+            name=collection_name,
+            embedding_function=ef,
+            configuration={
+                "hnsw": {
+                    "space": "cosine"
+                }
+            }
+        )
 
         # Prepare data for insertion
         ids = [f"doc_{i}" for i in range(len(documents))]
